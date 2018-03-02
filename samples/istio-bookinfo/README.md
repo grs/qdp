@@ -13,6 +13,8 @@ oc adm policy add-scc-to-user privileged -z default -n $(oc project -q)
 
 Inject sidecars into istio bookinfo sample app and apply:
 
-oc apply -f <(curl https://raw.githubusercontent.com/istio/istio/release-0.1/samples/apps/bookinfo/bookinfo.yaml | QDP_DOMAIN=<domain-suffix> node ./bin/inject.js)
+oc apply -f <(curl https://raw.githubusercontent.com/istio/istio/release-0.1/samples/apps/bookinfo/bookinfo.yaml | QDP_DOMAIN=-myproject.127.0.0.1.nip.io node ./bin/inject.js)
 
-Then add a route for the productpage service of the form productpag<domain-suffix>. That route then provides access to the app.
+Then add a route for the productpage service of the form productpage-myproject.127.0.0.1.nip.io. That route then provides access to the app.
+
+oc expose service productpage
