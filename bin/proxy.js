@@ -17,10 +17,10 @@ var http = require('http');
 var https = require('https');
 var url_parse = require('url').parse;
 var util = require('util');
-var amqp = require('rhea');
 var client = require('../lib/client.js');
 var common = require('../lib/common.js');
 var service = require('../lib/service.js');
+var relay = require('../lib/relay.js');
 var opentracing = require('opentracing');
 var jaeger = require('jaeger-client');
 var initTracer = jaeger.initTracer;
@@ -101,11 +101,11 @@ function outbound (request, response) {
 
         console.log('client sending message: %s %s %s', message_out.subject, message_out.to, message_out.application_properties.path);
         requester.request(message_out).then(function (message_in) {
-            console.log('got reply for outbound request: %s %s %s', message_in.subject, message_in.to, message_in.application_properties.path);
+            console.log('got reply for outbound request: %s %s %s', message_in.subject, message_in.to, message_in.application_properties ? message_in.application_properties.path : undefined);
             for (var key in message_in.application_properties) {
                 response.setHeader(key, message_in.application_properties[key]);
             }
-            response.statusCode = message_in.subject;
+            response.statusCode = message_in.subject || 203;
             if (message_in.content_type) {
                 response.setHeader('content-type', message_in.content_type);
             }
@@ -136,3 +136,6 @@ var subscriber = service.subscriber(router_conf(), tracer);
 for (var i = 2; i < process.argv.length; i++) {
     subscriber.subscribe(process.argv[i]);
 }
+
+var amqp_server = relay.server(service_name + '-proxy', router_conf(), tracer);
+amqp_server.listen({port:process.env.QDR_AMQP_RELAY_PORT || 5672});

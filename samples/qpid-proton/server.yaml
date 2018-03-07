@@ -1,0 +1,50 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: proton-server-example
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: proton-server-example
+        version: v1
+    spec:
+      containers:
+      - name: proton-server-example
+        image: gordons/qpid-proton:0.21.0rc1
+        command: ["/usr/share/proton-0.21.0/examples/python/server.py"]
+        imagePullPolicy: IfNotPresent
+      - name: jaeger-agent
+        command:
+        - /go/bin/agent-linux
+        - --collector.host-port=jaeger-collector:14267
+        image: jaegertracing/jaeger-agent
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5775
+          protocol: UDP
+        - containerPort: 5778
+          protocol: TCP
+        - containerPort: 6831
+          protocol: UDP
+        - containerPort: 6832
+          protocol: UDP
+      - name: qdr-proxy
+        command:
+        - node
+        - /opt/app-root/src/bin/proxy.js
+        - details=localhost:9080
+        env:
+        - name: QDP_DOMAIN
+          value: -myproject.127.0.0.1.nip.io
+        - name: SERVICE_NAME
+          value: proton-server-example
+        - name: SERVICE_VERSION
+          value: v1
+        image: gordons/qdr-proxy:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 15001
+          protocol: TCP
+        resources: {}
